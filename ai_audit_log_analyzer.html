@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Audit Assistant - Security Log Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #1e293b;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .container {
+            padding: 20px;
+        }
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            padding: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #3b82f6;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #334155;
+            text-align: left;
+        }
+        th {
+            background: #334155;
+        }
+        .risk-high { color: #ef4444; }
+        .risk-medium { color: #f59e0b; }
+        .risk-low { color: #22c55e; }
+        .summary-box {
+            display: flex;
+            gap: 20px;
+        }
+        .summary {
+            background: #334155;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    🔐 AI-Powered Security Log Audit Assistant
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h3>Upload Security Log File</h3>
+        <input type="file" id="logFile" accept=".txt,.log">
+        <br>
+        <button onclick="analyzeLog()">Analyze Logs</button>
+    </div>
+
+    <div class="card">
+        <h3>Audit Summary</h3>
+        <div class="summary-box">
+            <div class="summary">
+                <h2 id="totalLogs">0</h2>
+                <p>Total Logs</p>
+            </div>
+            <div class="summary">
+                <h2 id="threatCount">0</h2>
+                <p>Threats Detected</p>
+            </div>
+            <div class="summary">
+                <h2 id="riskScore">0</h2>
+                <p>Risk Score</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Detected Threats</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Log Entry</th>
+                    <th>Threat Type</th>
+                    <th>Severity</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTable">
+            </tbody>
+        </table>
+        <button onclick="downloadReport()">Download Audit Report</button>
+    </div>
+
+</div>
+
+<script>
+let detectedThreats = [];
+let totalLogs = 0;
+
+function analyzeLog() {
+    const fileInput = document.getElementById("logFile");
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("Please upload a log file.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const content = event.target.result;
+        processLog(content);
+    };
+    reader.readAsText(file);
+}
+
+function processLog(content) {
+    detectedThreats = [];
+    totalLogs = 0;
+    const lines = content.split("\n");
+    totalLogs = lines.length;
+
+    lines.forEach(line => {
+        let threatType = "";
+        let severity = "";
+
+        // AI Pattern Simulation
+        if (line.includes("Failed password") || line.includes("authentication failure")) {
+            threatType = "Brute Force Attempt";
+            severity = "High";
+        }
+        else if (line.includes("SQL") || line.includes("SELECT * FROM")) {
+            threatType = "SQL Injection Attempt";
+            severity = "High";
+        }
+        else if (line.includes("XSS") || line.includes("<script>")) {
+            threatType = "Cross-Site Scripting (XSS)";
+            severity = "Medium";
+        }
+        else if (line.includes("404") || line.includes("not found")) {
+            threatType = "Suspicious Scanning Activity";
+            severity = "Low";
+        }
+
+        if (threatType !== "") {
+            detectedThreats.push({
+                log: line,
+                type: threatType,
+                severity: severity
+            });
+        }
+    });
+
+    updateDashboard();
+    renderTable();
+}
+
+function updateDashboard() {
+    document.getElementById("totalLogs").innerText = totalLogs;
+    document.getElementById("threatCount").innerText = detectedThreats.length;
+
+    let score = 0;
+    detectedThreats.forEach(t => {
+        if (t.severity === "High") score += 10;
+        else if (t.severity === "Medium") score += 5;
+        else score += 2;
+    });
+
+    document.getElementById("riskScore").innerText = score;
+}
+
+function renderTable() {
+    const table = document.getElementById("resultsTable");
+    table.innerHTML = "";
+
+    detectedThreats.forEach(threat => {
+        let row = `<tr>
+            <td>${threat.log}</td>
+            <td>${threat.type}</td>
+            <td class="risk-${threat.severity.toLowerCase()}">${threat.severity}</td>
+        </tr>`;
+        table.innerHTML += row;
+    });
+}
+
+function downloadReport() {
+    let report = "AI Security Log Audit Report\n";
+    report += "=================================\n";
+    report += "Total Logs: " + totalLogs + "\n";
+    report += "Threats Detected: " + detectedThreats.length + "\n\n";
+
+    detectedThreats.forEach((t, index) => {
+        report += "Threat " + (index+1) + "\n";
+        report += "Log: " + t.log + "\n";
+        report += "Type: " + t.type + "\n";
+        report += "Severity: " + t.severity + "\n";
+        report += "---------------------------------\n";
+    });
+
+    const blob = new Blob([report], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "audit_report.txt";
+    link.click();
+}
+</script>
+
+</body>
+</html>
